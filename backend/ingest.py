@@ -40,6 +40,3 @@ def load_vectorstore():
         embedding_function=embedder,
         collection_name="documents"
     )
-
-
-
