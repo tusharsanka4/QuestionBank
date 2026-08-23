@@ -27,7 +27,7 @@ def web_search(query: str) -> str:
 @tool(description="Summarize a long block of text into key points.")
 def summarize(query: str) -> str:
     from langchain_groq import ChatGroq
-    llm = ChatGroq(model="llama-3.1-8b-instant", max_tokens=512)
+    llm = ChatGroq(model="openai/gpt-oss-20b", max_tokens=1024)
     response = llm.invoke(f"Summarize the following in clear bullet points:\n\n{query}")
     return response.content
 

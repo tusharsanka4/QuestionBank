@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from ingest import ingest_pdf
 from agent import run_agent
+import tempfile
 
 load_dotenv()
 
@@ -33,7 +34,7 @@ async def upload(file: UploadFile = File(...)):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
     
-    tmp_path = f"/tmp/{file.filename}"
+    tmp_path = os.path.join(tempfile.gettempdir(), file.filename)
     with open(tmp_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
     

@@ -6,7 +6,7 @@ from tools import tools
 
 load_dotenv()
 
-llm = ChatGroq(model = "llama-3.1-8b-instant", max_tokens = 1024)
+llm = ChatGroq(model="openai/gpt-oss-20b", max_tokens=1024)
 
 agent = create_react_agent(
         llm, tools, prompt = (
