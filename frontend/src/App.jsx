@@ -31,7 +31,7 @@ export default function App() {
     formData.append("file", file);
 
     try {
-      await fetch("http://questionbank-production.up.railway.app/upload", {
+      await fetch("https://questionbank-production.up.railway.app/upload", {
         method: "POST",
         body: formData,
       });
@@ -52,7 +52,7 @@ export default function App() {
     setThinking(true);
 
     try {
-      const res = await fetch("http://questionbank-production.up.railway.app/query", {
+      const res = await fetch("https://questionbank-production.up.railway.app/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: text }),
