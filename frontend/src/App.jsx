@@ -1,6 +1,8 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import "./index.css";
+
+const BACKEND = "https://questionbank-production.up.railway.app";
 
 const STATES = {
   WELCOME: "welcome",
@@ -14,8 +16,17 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [thinking, setThinking] = useState(false);
+  const [sessionId, setSessionId] = useState(null);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Get a session ID from the backend on load
+  useEffect(() => {
+    fetch(`${BACKEND}/session`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data) => setSessionId(data.session_id))
+      .catch(() => console.error("Could not create session"));
+  }, []);
 
   function handleInsertFile() {
     fileInputRef.current.click();
@@ -23,7 +34,7 @@ export default function App() {
 
   async function handleFileChange(e) {
     const file = e.target.files[0];
-    if (!file) return;
+    if (!file || !sessionId) return;
 
     setAppState(STATES.UPLOADING);
 
@@ -31,8 +42,9 @@ export default function App() {
     formData.append("file", file);
 
     try {
-      await fetch("https://questionbank-production.up.railway.app/upload", {
+      await fetch(`${BACKEND}/upload`, {
         method: "POST",
+        headers: { "x-session-id": sessionId },
         body: formData,
       });
     } catch {
@@ -45,16 +57,19 @@ export default function App() {
 
   async function handleSend() {
     const text = input.trim();
-    if (!text || thinking) return;
+    if (!text || thinking || !sessionId) return;
 
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setThinking(true);
 
     try {
-      const res = await fetch("https://questionbank-production.up.railway.app/query", {
+      const res = await fetch(`${BACKEND}/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-session-id": sessionId,
+        },
         body: JSON.stringify({ question: text }),
       });
       const data = await res.json();
