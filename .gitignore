@@ -1,5 +1,8 @@
 backend/venv/
 backend/chroma_db/
 backend/.env
+frontend/.env
 __pycache__/
 *.pyc
+Notes.md
+plan.html

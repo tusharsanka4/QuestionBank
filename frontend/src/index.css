@@ -231,3 +231,59 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+.auth-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background: #3B6FE0;
+}
+
+.auth-description {
+  margin-top: 20px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.auth-button {
+  margin-top: 24px;
+  padding: 13px 24px;
+  border: 0;
+  border-radius: 24px;
+  color: #3B6FE0;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.auth-error {
+  max-width: 480px;
+  margin-top: 18px;
+  color: #ffffff;
+  text-align: center;
+}
+
+.account-bar {
+  position: absolute;
+  z-index: 10;
+  top: 16px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.8rem;
+}
+
+.account-bar button {
+  padding: 7px 12px;
+  border: 1px solid currentColor;
+  border-radius: 16px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}

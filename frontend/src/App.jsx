@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "./supabase";
 import "./index.css";
 
-const BACKEND = "https://questionbank-production.up.railway.app";
+const BACKEND = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const STATES = {
   WELCOME: "welcome",
@@ -12,6 +13,9 @@ const STATES = {
 };
 
 export default function App() {
+  const [authSession, setAuthSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
   const [appState, setAppState] = useState(STATES.WELCOME);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
@@ -20,13 +24,58 @@ export default function App() {
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Get a session ID from the backend on load
+  // Restore the Supabase login and listen for sign-in/sign-out changes.
   useEffect(() => {
-    fetch(`${BACKEND}/session`, { method: "POST" })
-      .then((res) => res.json())
-      .then((data) => setSessionId(data.session_id))
-      .catch(() => console.error("Could not create session"));
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) setAuthError(error.message);
+      setAuthSession(session);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setAuthSession(session);
+        setAuthLoading(false);
+      },
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
+
+  // Create an application session only after the user is authenticated.
+  useEffect(() => {
+    if (!authSession?.access_token) {
+      setSessionId(null);
+      return;
+    }
+
+    fetch(`${BACKEND}/session`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${authSession.access_token}` },
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Could not create an authenticated session.");
+        return res.json();
+      })
+      .then((data) => setSessionId(data.session_id))
+      .catch((error) => setAuthError(error.message));
+  }, [authSession]);
+
+  async function handleSignIn() {
+    setAuthError("");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) setAuthError(error.message);
+  }
+
+  async function handleSignOut() {
+    await supabase.auth.signOut();
+    setMessages([]);
+    setSessionId(null);
+    setAppState(STATES.WELCOME);
+  }
 
   function handleInsertFile() {
     fileInputRef.current.click();
@@ -44,7 +93,10 @@ export default function App() {
     try {
       await fetch(`${BACKEND}/upload`, {
         method: "POST",
-        headers: { "x-session-id": sessionId },
+        headers: {
+          Authorization: `Bearer ${authSession.access_token}`,
+          "x-session-id": sessionId,
+        },
         body: formData,
       });
     } catch {
@@ -68,6 +120,7 @@ export default function App() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${authSession.access_token}`,
           "x-session-id": sessionId,
         },
         body: JSON.stringify({ question: text }),
@@ -99,6 +152,24 @@ export default function App() {
   const isReady = appState === STATES.READY;
   const isChatting = appState === STATES.CHATTING;
 
+  if (authLoading) {
+    return <div className="auth-screen"><p>Loading…</p></div>;
+  }
+
+  if (!authSession) {
+    return (
+      <div className="auth-screen">
+        <p className="welcome-text">Welcome to</p>
+        <h1 className="main-title">Question Bank</h1>
+        <p className="auth-description">Sign in to work with your documents.</p>
+        <button className="auth-button" onClick={handleSignIn}>
+          Continue with Google
+        </button>
+        {authError && <p className="auth-error" role="alert">{authError}</p>}
+      </div>
+    );
+  }
+
   return (
     <motion.div
       className="app"
@@ -107,6 +178,10 @@ export default function App() {
       }}
       transition={{ duration: 1.2, ease: "easeInOut" }}
     >
+      <div className="account-bar">
+        <span>{authSession.user.email}</span>
+        <button onClick={handleSignOut}>Sign out</button>
+      </div>
       {/* Hidden file input */}
       <input
         ref={fileInputRef}

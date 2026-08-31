@@ -2,21 +2,20 @@ import os
 import shutil
 import uuid
 import tempfile
-from dotenv import load_dotenv
-from fastapi import FastAPI, UploadFile, File, HTTPException, Header
+from config import settings
+from fastapi import Depends, FastAPI, UploadFile, File, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from ingest import ingest_pdf
 from agent import run_agent
-
-load_dotenv()
+from auth import AuthenticatedUser, get_current_user
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=list(settings.frontend_origins),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -38,7 +37,7 @@ def health():
     return {"status": "ok"}
 
 @app.post("/session")
-def create_session():
+def create_session(_user: AuthenticatedUser = Depends(get_current_user)):
     """Frontend calls this on load to get a unique session ID."""
     session_id = str(uuid.uuid4())
     session_histories[session_id] = []
@@ -47,7 +46,8 @@ def create_session():
 @app.post("/upload")
 async def upload(
     file: UploadFile = File(...),
-    x_session_id: Optional[str] = Header(None)
+    x_session_id: Optional[str] = Header(None),
+    _user: AuthenticatedUser = Depends(get_current_user),
 ):
     if not file.filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are supported.")
@@ -66,7 +66,8 @@ async def upload(
 @app.post("/query")
 async def query(
     request: QueryRequest,
-    x_session_id: Optional[str] = Header(None)
+    x_session_id: Optional[str] = Header(None),
+    _user: AuthenticatedUser = Depends(get_current_user),
 ):
     if not x_session_id:
         raise HTTPException(status_code=400, detail="Missing session ID.")
@@ -78,7 +79,10 @@ async def query(
     return {"response": response}
 
 @app.post("/reset")
-def reset(x_session_id: Optional[str] = Header(None)):
+def reset(
+    x_session_id: Optional[str] = Header(None),
+    _user: AuthenticatedUser = Depends(get_current_user),
+):
     if x_session_id and x_session_id in session_histories:
         session_histories[x_session_id] = []
     return {"message": "Session reset."}

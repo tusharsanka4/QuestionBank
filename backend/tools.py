@@ -1,11 +1,6 @@
-import os
-from dotenv import load_dotenv
-from langchain.tools import tool
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.tools import StructuredTool
 from ingest import load_vectorstore
-
-load_dotenv()
 
 def make_tools(session_id: str):
     """Build a tool list scoped to a specific session."""

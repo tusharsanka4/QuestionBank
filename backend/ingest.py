@@ -1,12 +1,8 @@
-import os
-from dotenv import load_dotenv
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
-from langchain.embeddings.base import Embeddings
-
-load_dotenv()
+from langchain_core.embeddings import Embeddings
 
 CHROMA_DIR = "./chroma_db"
 
